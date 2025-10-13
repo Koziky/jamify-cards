@@ -1,8 +1,13 @@
 import { useState, useEffect } from "react";
-import { Music2 } from "lucide-react";
+import { Music2, ListMusic } from "lucide-react";
 import { SongCard } from "@/components/SongCard";
 import { AddSongDialog } from "@/components/AddSongDialog";
 import { PlaylistManager } from "@/components/PlaylistManager";
+import { MusicPlayer } from "@/components/MusicPlayer";
+import { QueueSidebar } from "@/components/QueueSidebar";
+import { useMusicQueue } from "@/hooks/useMusicQueue";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface Song {
   id: string;
@@ -21,7 +26,24 @@ const Index = () => {
   const [songs, setSongs] = useState<Song[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
-  const [currentlyPlayingId, setCurrentlyPlayingId] = useState<string | null>(null);
+  const [isQueueOpen, setIsQueueOpen] = useState(false);
+
+  const {
+    queue,
+    currentSong,
+    currentIndex,
+    isShuffled,
+    hasNext,
+    hasPrevious,
+    addToQueue,
+    addMultipleToQueue,
+    removeFromQueue,
+    playNext,
+    playPrevious,
+    playAtIndex,
+    shuffleQueue,
+    reorderQueue,
+  } = useMusicQueue();
 
   // Load from localStorage
   useEffect(() => {
@@ -51,9 +73,7 @@ const Index = () => {
 
   const handleDeleteSong = (id: string) => {
     setSongs(songs.filter((song) => song.id !== id));
-    if (currentlyPlayingId === id) {
-      setCurrentlyPlayingId(null);
-    }
+    removeFromQueue(id);
   };
 
   const handleCreatePlaylist = (name: string) => {
@@ -72,6 +92,20 @@ const Index = () => {
     }
   };
 
+  const handleAddToQueue = (song: Song) => {
+    addToQueue(song);
+    toast.success("Added to queue");
+  };
+
+  const handlePlayAll = () => {
+    if (filteredSongs.length === 0) {
+      toast.error("No songs to play");
+      return;
+    }
+    addMultipleToQueue(filteredSongs);
+    toast.success("Playing all songs");
+  };
+
   const filteredSongs = selectedPlaylistId
     ? songs.filter((song) => {
         const playlist = playlists.find((p) => p.id === selectedPlaylistId);
@@ -80,67 +114,103 @@ const Index = () => {
     : songs;
 
   return (
-    <div className="min-h-screen p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <div className="flex items-center justify-center gap-3">
-            <div className="p-3 rounded-2xl gradient-primary glow-primary">
-              <Music2 className="h-10 w-10" />
+    <div className="min-h-screen pb-32">
+      <div className="p-8">
+        <div className="max-w-7xl mx-auto space-y-8">
+          {/* Header */}
+          <div className="text-center space-y-4">
+            <div className="flex items-center justify-center gap-3">
+              <div className="p-3 rounded-2xl gradient-primary glow-primary">
+                <Music2 className="h-10 w-10" />
+              </div>
+              <h1 className="text-5xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                Music Player
+              </h1>
             </div>
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Music Player
-            </h1>
-          </div>
-          <p className="text-muted-foreground text-lg">
-            Add songs from YouTube and create your perfect playlists
-          </p>
-        </div>
-
-        {/* Actions */}
-        <div className="flex justify-center gap-4">
-          <AddSongDialog onAddSong={handleAddSong} />
-          <PlaylistManager
-            playlists={playlists}
-            onCreatePlaylist={handleCreatePlaylist}
-            onDeletePlaylist={handleDeletePlaylist}
-            onSelectPlaylist={setSelectedPlaylistId}
-            selectedPlaylistId={selectedPlaylistId}
-          />
-        </div>
-
-        {/* Songs Grid */}
-        {filteredSongs.length === 0 ? (
-          <div className="text-center py-20">
-            <Music2 className="h-20 w-20 mx-auto text-muted-foreground/50 mb-4" />
-            <h3 className="text-2xl font-semibold text-muted-foreground mb-2">
-              No songs yet
-            </h3>
-            <p className="text-muted-foreground">
-              Add your first song to get started!
+            <p className="text-muted-foreground text-lg">
+              Add songs from YouTube and create your perfect playlists
             </p>
           </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {filteredSongs.map((song) => (
-              <SongCard
-                key={song.id}
-                song={song}
-                isPlaying={currentlyPlayingId === song.id}
-                onPlay={() => {
-                  if (currentlyPlayingId === song.id) {
-                    setCurrentlyPlayingId(null);
-                  } else {
-                    setCurrentlyPlayingId(song.id);
-                    window.open(song.url, "_blank");
-                  }
-                }}
-                onDelete={() => handleDeleteSong(song.id)}
-              />
-            ))}
+
+          {/* Actions */}
+          <div className="flex justify-center gap-4 flex-wrap">
+            <AddSongDialog onAddSong={handleAddSong} />
+            <PlaylistManager
+              playlists={playlists}
+              onCreatePlaylist={handleCreatePlaylist}
+              onDeletePlaylist={handleDeletePlaylist}
+              onSelectPlaylist={setSelectedPlaylistId}
+              selectedPlaylistId={selectedPlaylistId}
+            />
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => setIsQueueOpen(!isQueueOpen)}
+              className="border-border/50 hover:border-primary/50"
+            >
+              <ListMusic className="mr-2 h-5 w-5" />
+              Queue ({queue.length})
+            </Button>
+            {filteredSongs.length > 0 && (
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={handlePlayAll}
+                className="border-border/50 hover:border-primary/50"
+              >
+                <Music2 className="mr-2 h-5 w-5" />
+                Play All
+              </Button>
+            )}
           </div>
-        )}
+
+          {/* Songs Grid */}
+          {filteredSongs.length === 0 ? (
+            <div className="text-center py-20">
+              <Music2 className="h-20 w-20 mx-auto text-muted-foreground/50 mb-4" />
+              <h3 className="text-2xl font-semibold text-muted-foreground mb-2">
+                No songs yet
+              </h3>
+              <p className="text-muted-foreground">
+                Add your first song to get started!
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {filteredSongs.map((song) => (
+                <SongCard
+                  key={song.id}
+                  song={song}
+                  onAddToQueue={() => handleAddToQueue(song)}
+                  onDelete={() => handleDeleteSong(song.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Music Player */}
+      <MusicPlayer
+        currentSong={currentSong}
+        onNext={playNext}
+        onPrevious={playPrevious}
+        hasNext={hasNext}
+        hasPrevious={hasPrevious}
+        isShuffled={isShuffled}
+        onToggleShuffle={shuffleQueue}
+      />
+
+      {/* Queue Sidebar */}
+      <QueueSidebar
+        queue={queue}
+        currentIndex={currentIndex}
+        isOpen={isQueueOpen}
+        onClose={() => setIsQueueOpen(false)}
+        onReorder={reorderQueue}
+        onRemove={removeFromQueue}
+        onPlayAtIndex={playAtIndex}
+      />
     </div>
   );
 };
