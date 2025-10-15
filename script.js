@@ -242,11 +242,11 @@ function renderSongs() {
                 <div class="song-card-image">
                     <img src="${song.thumbnail}" alt="${song.title}">
                     <div class="song-card-overlay">
-                        <button class="play-btn" onclick="playNow('${song.id}')">▶️</button>
-                        <button class="play-btn" onclick="addToQueue('${song.id}')">➕</button>
+                        <button class="play-btn" onclick="playNow('${song.id}')">Play</button>
+                        <button class="play-btn" onclick="addToQueue('${song.id}')">+ Queue</button>
                     </div>
-                    <button class="delete-btn" onclick="deleteSong('${song.id}')">🗑️</button>
-                    ${playlists.length > 0 ? `<button class="add-playlist-btn" onclick="openAddToPlaylistDialog('${song.id}')">📋</button>` : ''}
+                    <button class="delete-btn" onclick="deleteSong('${song.id}')">Delete</button>
+                    ${playlists.length > 0 ? `<button class="add-playlist-btn" onclick="openAddToPlaylistDialog('${song.id}')">+List</button>` : ''}
                 </div>
                 <div class="song-card-info">
                     <div class="song-card-title">${song.title}</div>
@@ -296,7 +296,7 @@ function openAddToPlaylistDialog(songId) {
             <div class="playlist-item">
                 <button class="playlist-btn ${hasSong ? 'active' : ''}" 
                         onclick="toggleSongInPlaylist('${playlist.id}', '${songId}')">
-                    📋 ${playlist.name}
+                    ${playlist.name}
                     ${hasSong ? '<span>✓</span>' : '<span>Add</span>'}
                 </button>
             </div>
@@ -366,7 +366,7 @@ function renderPlaylists() {
         <div class="playlist-item">
             <button class="playlist-btn ${selectedPlaylistId === null ? 'active' : ''}" 
                     onclick="selectPlaylist(null)">
-                📋 All Songs
+                All Songs
                 <span>${songs.length}</span>
             </button>
         </div>
@@ -374,10 +374,10 @@ function renderPlaylists() {
             <div class="playlist-item">
                 <button class="playlist-btn ${selectedPlaylistId === playlist.id ? 'active' : ''}" 
                         onclick="selectPlaylist('${playlist.id}')">
-                    📋 ${playlist.name}
+                    ${playlist.name}
                     <span>${playlist.songIds?.length || 0}</span>
                 </button>
-                <button class="playlist-delete" onclick="deletePlaylist('${playlist.id}')">🗑️</button>
+                <button class="playlist-delete" onclick="deletePlaylist('${playlist.id}')">Delete</button>
             </div>
         `).join('')}
     `;
@@ -488,7 +488,7 @@ function renderQueue() {
     if (queue.length === 0) {
         list.innerHTML = `
             <div style="text-align: center; padding: 3rem 1rem; color: var(--text-secondary);">
-                <div style="font-size: 3rem; margin-bottom: 0.5rem; opacity: 0.5;">📋</div>
+                <div style="font-size: 3rem; margin-bottom: 0.5rem; opacity: 0.5;">♪</div>
                 <p>No songs in queue</p>
             </div>
         `;
@@ -503,7 +503,7 @@ function renderQueue() {
                     <div class="queue-item-title">${song.title}</div>
                     ${index === currentIndex ? '<div class="queue-item-status">Now Playing</div>' : ''}
                 </div>
-                <button class="queue-item-delete" onclick="event.stopPropagation(); removeFromQueue(${index})">🗑️</button>
+                <button class="queue-item-delete" onclick="event.stopPropagation(); removeFromQueue(${index})">×</button>
             </div>
         `).join('');
     }
@@ -586,7 +586,7 @@ function togglePlayPause() {
 
 function updatePlayButton() {
     const btn = document.getElementById('play-pause-btn');
-    btn.textContent = isPlaying ? '⏸️' : '▶️';
+    btn.textContent = isPlaying ? 'Pause' : 'Play';
 }
 
 function playNext() {
@@ -633,7 +633,7 @@ function toggleMute() {
 
 function updateVolumeIcon() {
     const icon = document.getElementById('volume-icon');
-    icon.textContent = (isMuted || volume === 0) ? '🔇' : '🔊';
+    icon.textContent = (isMuted || volume === 0) ? 'Muted' : 'Vol';
 }
 
 // Toast notifications

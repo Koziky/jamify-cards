@@ -9,11 +9,11 @@
 <body>
     <!-- Header -->
     <header class="header">
-        <h1>🎵 Music Player</h1>
+        <h1>Music Player</h1>
         <div class="header-actions">
-            <button onclick="openSearchDialog()" class="btn btn-primary">🔍 Search YouTube</button>
-            <button onclick="openAddSongDialog()" class="btn btn-secondary">➕ Add Song</button>
-            <button onclick="openPlaylistDialog()" class="btn btn-secondary">📋 Playlists</button>
+            <button onclick="openSearchDialog()" class="btn btn-primary">Search YouTube</button>
+            <button onclick="openAddSongDialog()" class="btn btn-secondary">Add Song</button>
+            <button onclick="openPlaylistDialog()" class="btn btn-secondary">Playlists</button>
         </div>
     </header>
 
@@ -26,15 +26,15 @@
     <main class="main-content">
         <!-- Action Buttons -->
         <div class="action-buttons">
-            <button onclick="playAll()" class="btn btn-primary">▶️ Play All</button>
+            <button onclick="playAll()" class="btn btn-primary">Play All</button>
             <button onclick="toggleQueue()" class="btn btn-secondary">
-                📋 Queue (<span id="queue-count">0</span>)
+                Queue (<span id="queue-count">0</span>)
             </button>
         </div>
 
         <!-- Empty State -->
         <div id="empty-state" class="empty-state">
-            <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.5;">🎵</div>
+            <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.5;">♪</div>
             <h2>No songs yet</h2>
             <p>Add your first song to get started!</p>
         </div>
@@ -53,13 +53,13 @@
             </div>
         </div>
         <div class="player-controls">
-            <button onclick="playPrevious()" class="control-btn">⏮️</button>
-            <button id="play-pause-btn" onclick="togglePlayPause()" class="control-btn control-btn-large">▶️</button>
-            <button onclick="playNext()" class="control-btn">⏭️</button>
-            <button id="shuffle-btn" onclick="toggleShuffle()" class="control-btn">🔀</button>
+            <button onclick="playPrevious()" class="control-btn">Prev</button>
+            <button id="play-pause-btn" onclick="togglePlayPause()" class="control-btn control-btn-large">Play</button>
+            <button onclick="playNext()" class="control-btn">Next</button>
+            <button id="shuffle-btn" onclick="toggleShuffle()" class="control-btn">Shuffle</button>
         </div>
         <div class="volume-controls">
-            <button id="volume-icon" onclick="toggleMute()" class="control-btn">🔊</button>
+            <button id="volume-icon" onclick="toggleMute()" class="control-btn">Vol</button>
             <input type="range" min="0" max="100" value="50" oninput="changeVolume(this.value)" class="volume-slider">
         </div>
     </div>
@@ -70,7 +70,7 @@
             <h2>Queue</h2>
             <div class="queue-header-info">
                 <span id="sidebar-queue-count">0 songs</span>
-                <button onclick="toggleQueue()" class="close-btn">✕</button>
+                <button onclick="toggleQueue()" class="close-btn">×</button>
             </div>
         </div>
         <div id="queue-list" class="queue-list"></div>
@@ -81,7 +81,7 @@
         <div class="dialog-content">
             <div class="dialog-header">
                 <h2>Add Song</h2>
-                <button onclick="closeAddSongDialog()" class="close-btn">✕</button>
+                <button onclick="closeAddSongDialog()" class="close-btn">×</button>
             </div>
             <div class="dialog-body">
                 <input type="text" id="youtube-url" placeholder="Paste YouTube URL here..." class="input">
@@ -95,7 +95,7 @@
         <div class="dialog-content">
             <div class="dialog-header">
                 <h2>Search YouTube</h2>
-                <button onclick="closeSearchDialog()" class="close-btn">✕</button>
+                <button onclick="closeSearchDialog()" class="close-btn">×</button>
             </div>
             <div class="dialog-body">
                 <input type="text" id="search-query" placeholder="Search for songs..." class="input">
@@ -110,7 +110,7 @@
         <div class="dialog-content">
             <div class="dialog-header">
                 <h2>Playlists</h2>
-                <button onclick="closePlaylistDialog()" class="close-btn">✕</button>
+                <button onclick="closePlaylistDialog()" class="close-btn">×</button>
             </div>
             <div class="dialog-body">
                 <div class="playlist-create">
@@ -127,7 +127,7 @@
         <div class="dialog-content">
             <div class="dialog-header">
                 <h2>Add to Playlist</h2>
-                <button onclick="closeAddToPlaylistDialog()" class="close-btn">✕</button>
+                <button onclick="closeAddToPlaylistDialog()" class="close-btn">×</button>
             </div>
             <div class="dialog-body">
                 <div id="available-playlists" class="playlists-list"></div>

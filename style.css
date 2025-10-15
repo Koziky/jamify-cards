@@ -284,6 +284,11 @@ body {
     border-top: 1px solid var(--border);
     padding: 1rem;
     z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
 }
 
 .music-player.hidden {
@@ -295,17 +300,10 @@ body {
     width: 0;
     height: 0;
     opacity: 0;
+    pointer-events: none;
 }
 
-.player-content {
-    max-width: 1400px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    gap: 2rem;
-}
-
-.player-song-info {
+.player-info {
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -313,25 +311,24 @@ body {
     min-width: 0;
 }
 
-.player-thumbnail {
+.player-info img {
     width: 3.5rem;
     height: 3.5rem;
     border-radius: 0.5rem;
     object-fit: cover;
 }
 
-.player-text h4 {
+.player-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.player-title {
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
-.player-text p {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-}
-
 .player-controls {
     display: flex;
     align-items: center;
@@ -339,44 +336,46 @@ body {
 }
 
 .control-btn {
-    background: transparent;
-    border: none;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
     color: var(--text-primary);
-    font-size: 1.25rem;
+    font-size: 0.875rem;
     cursor: pointer;
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 50%;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
     transition: all 0.3s;
+    font-weight: 500;
 }
 
 .control-btn:hover {
-    background: var(--bg-card);
+    border-color: var(--primary);
 }
 
-.control-btn-main {
-    width: 3rem;
-    height: 3rem;
+.control-btn-large {
     background: linear-gradient(135deg, var(--primary), var(--accent));
-    font-size: 1.5rem;
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
 }
 
-.control-btn-main:hover {
+.control-btn-large:hover {
     box-shadow: 0 0 20px var(--glow);
 }
 
 .control-btn.active {
     background: linear-gradient(135deg, var(--primary), var(--accent));
+    border: none;
+    color: white;
 }
 
-.player-volume {
+.volume-controls {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    width: 8rem;
+    width: 10rem;
 }
 
-#volume-slider {
+.volume-slider {
     flex: 1;
     height: 4px;
     border-radius: 2px;
@@ -385,7 +384,7 @@ body {
     -webkit-appearance: none;
 }
 
-#volume-slider::-webkit-slider-thumb {
+.volume-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     width: 12px;
     height: 12px;
