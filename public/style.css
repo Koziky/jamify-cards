@@ -153,6 +153,45 @@ body {
     opacity: 1;
 }
 
+.song-card-actions {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.song-card:hover .song-card-actions {
+    opacity: 1;
+}
+
+.action-btn {
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-primary);
+    transition: all 0.2s;
+}
+
+.action-btn:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    transform: scale(1.1);
+}
+
+.action-btn.delete:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+}
+
 .play-btn {
     width: 4rem;
     height: 4rem;
@@ -160,32 +199,16 @@ body {
     background: linear-gradient(135deg, var(--primary), var(--accent));
     border: none;
     color: white;
-    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     transition: all 0.3s;
 }
 
 .play-btn:hover {
     box-shadow: 0 0 30px rgba(233, 77, 159, 0.5);
-}
-
-.delete-btn {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    width: 2rem;
-    height: 2rem;
-    border-radius: 50%;
-    background: #dc2626;
-    border: none;
-    color: white;
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.song-card:hover .delete-btn {
-    opacity: 1;
+    transform: scale(1.1);
 }
 
 .song-card-info {
@@ -538,6 +561,93 @@ body {
 .dialog-content input[type="text"]:focus {
     outline: none;
     border-color: var(--primary);
+}
+
+.search-results {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.search-result-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+}
+
+.search-result-item:hover {
+    border-color: var(--primary);
+}
+
+.search-result-item img {
+    width: 48px;
+    height: 48px;
+    border-radius: 4px;
+    object-fit: cover;
+}
+
+.search-result-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.search-result-title {
+    color: var(--text-primary);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-result-artist {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.playlist-toggle-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.playlist-toggle-btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 1rem;
+    text-align: left;
+}
+
+.playlist-toggle-btn:hover {
+    border-color: var(--primary);
+}
+
+.playlist-toggle-btn.active {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: white;
+    border-color: var(--accent);
+}
+
+.playlist-toggle-btn span {
+    font-weight: bold;
+    font-size: 1.2rem;
 }
 
 .playlist-input {

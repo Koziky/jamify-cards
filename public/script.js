@@ -10,14 +10,38 @@ let player = null;
 let isPlaying = false;
 let volume = 50;
 let isMuted = false;
+let playHistory = [];
+let wakeLock = null;
+
+// Wake Lock API
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Wake Lock is active');
+        }
+    } catch (err) {
+        console.error('Wake Lock error:', err);
+    }
+}
+
+function releaseWakeLock() {
+    if (wakeLock) {
+        wakeLock.release();
+        wakeLock = null;
+        console.log('Wake Lock released');
+    }
+}
 
 // Load data from localStorage on startup
 function loadData() {
     const savedSongs = localStorage.getItem('musicPlayerSongs');
     const savedPlaylists = localStorage.getItem('musicPlayerPlaylists');
+    const savedHistory = localStorage.getItem('playHistory');
     
     if (savedSongs) songs = JSON.parse(savedSongs);
     if (savedPlaylists) playlists = JSON.parse(savedPlaylists);
+    if (savedHistory) playHistory = JSON.parse(savedHistory);
     
     renderSongs();
     renderPlaylists();
@@ -27,6 +51,19 @@ function loadData() {
 function saveData() {
     localStorage.setItem('musicPlayerSongs', JSON.stringify(songs));
     localStorage.setItem('musicPlayerPlaylists', JSON.stringify(playlists));
+    localStorage.setItem('playHistory', JSON.stringify(playHistory));
+}
+
+// Track play history
+function trackPlay(songId) {
+    const existing = playHistory.find(h => h.songId === songId);
+    if (existing) {
+        existing.count++;
+        existing.lastPlayed = Date.now();
+    } else {
+        playHistory.push({ songId, count: 1, lastPlayed: Date.now() });
+    }
+    saveData();
 }
 
 // Extract YouTube video ID from URL
@@ -48,14 +85,85 @@ function onYouTubeIframeAPIReady() {
     console.log('YouTube API Ready');
 }
 
-// Add Song Dialog
-function openAddSongDialog() {
-    document.getElementById('add-song-dialog').classList.add('show');
+// Search Dialog
+function openSearchDialog() {
+    document.getElementById('search-dialog').classList.add('show');
+    document.getElementById('search-input').focus();
 }
 
-function closeAddSongDialog() {
-    document.getElementById('add-song-dialog').classList.remove('show');
-    document.getElementById('youtube-url').value = '';
+function closeSearchDialog() {
+    document.getElementById('search-dialog').classList.remove('show');
+    document.getElementById('search-input').value = '';
+    document.getElementById('search-results').innerHTML = '';
+}
+
+let searchTimeout;
+async function searchSongs() {
+    clearTimeout(searchTimeout);
+    const query = document.getElementById('search-input').value.trim();
+    const resultsDiv = document.getElementById('search-results');
+    
+    if (!query) {
+        resultsDiv.innerHTML = '';
+        return;
+    }
+    
+    resultsDiv.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">Searching...</div>';
+    
+    searchTimeout = setTimeout(async () => {
+        try {
+            const response = await fetch(`${window.location.origin}/functions/v1/spotify-search`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query })
+            });
+            
+            if (!response.ok) throw new Error('Search failed');
+            
+            const data = await response.json();
+            
+            if (data.tracks.length === 0) {
+                resultsDiv.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">No results found</div>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = data.tracks.map(track => `
+                <div class="search-result-item">
+                    <img src="${track.thumbnail}" alt="${track.title}">
+                    <div class="search-result-info">
+                        <div class="search-result-title">${track.title}</div>
+                        <div class="search-result-artist">${track.artistName}</div>
+                    </div>
+                    <button class="action-btn" onclick='addSearchResult(${JSON.stringify(track).replace(/'/g, "&#39;")})'>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Search error:', error);
+            resultsDiv.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">Search failed. Please try again.</div>';
+        }
+    }, 500);
+}
+
+function addSearchResult(track) {
+    const newSong = {
+        id: Date.now().toString() + Math.random(),
+        title: track.title,
+        thumbnail: track.thumbnail,
+        url: track.url,
+        previewUrl: track.previewUrl,
+        spotifyUri: track.spotifyUri,
+        isSpotify: true
+    };
+    
+    songs.push(newSong);
+    saveData();
+    renderSongs();
+    showToast('Song added!');
+    closeSearchDialog();
 }
 
 async function addSong() {
@@ -118,9 +226,29 @@ function renderSongs() {
                 <div class="song-card-image">
                     <img src="${song.thumbnail}" alt="${song.title}">
                     <div class="song-card-overlay">
-                        <button class="play-btn" onclick="addToQueue('${song.id}')">➕</button>
+                        <button class="play-btn" onclick="addToQueue('${song.id}')">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                        </button>
                     </div>
-                    <button class="delete-btn" onclick="deleteSong('${song.id}')">🗑️</button>
+                    <div class="song-card-actions">
+                        <button class="action-btn" onclick="event.stopPropagation(); addToQueue('${song.id}')" title="Add to queue">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                            </svg>
+                        </button>
+                        <button class="action-btn" onclick="event.stopPropagation(); openAddToPlaylistDialog('${song.id}')" title="Add to playlist">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                                <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/>
+                            </svg>
+                        </button>
+                        <button class="action-btn delete" onclick="event.stopPropagation(); deleteSong('${song.id}')" title="Delete">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 <div class="song-card-info">
                     <div class="song-card-title">${song.title}</div>
@@ -130,12 +258,66 @@ function renderSongs() {
     }
 }
 
+// Add song to playlist dialog
+function openAddToPlaylistDialog(songId) {
+    const dialog = document.getElementById('add-to-playlist-dialog');
+    const list = document.getElementById('add-to-playlist-list');
+    
+    dialog.dataset.songId = songId;
+    
+    list.innerHTML = playlists.map(playlist => {
+        const isInPlaylist = playlist.songIds?.includes(songId);
+        return `
+            <button class="playlist-toggle-btn ${isInPlaylist ? 'active' : ''}" 
+                    onclick="toggleSongInPlaylist('${playlist.id}', '${songId}')">
+                ${playlist.name}
+                <span>${isInPlaylist ? '✓' : '+'}</span>
+            </button>
+        `;
+    }).join('');
+    
+    dialog.classList.add('show');
+}
+
+function closeAddToPlaylistDialog() {
+    document.getElementById('add-to-playlist-dialog').classList.remove('show');
+}
+
+function toggleSongInPlaylist(playlistId, songId) {
+    const playlist = playlists.find(p => p.id === playlistId);
+    if (!playlist) return;
+    
+    if (!playlist.songIds) playlist.songIds = [];
+    
+    const index = playlist.songIds.indexOf(songId);
+    if (index > -1) {
+        playlist.songIds.splice(index, 1);
+        showToast('Removed from playlist');
+    } else {
+        playlist.songIds.push(songId);
+        showToast('Added to playlist');
+    }
+    
+    saveData();
+    openAddToPlaylistDialog(songId); // Refresh the dialog
+    renderPlaylists();
+}
+
 function deleteSong(id) {
     songs = songs.filter(s => s.id !== id);
     queue = queue.filter(s => s.id !== id);
+    
+    // Remove from all playlists
+    playlists.forEach(playlist => {
+        if (playlist.songIds) {
+            playlist.songIds = playlist.songIds.filter(sid => sid !== id);
+        }
+    });
+    
     saveData();
     renderSongs();
     renderQueue();
+    renderPlaylists();
     showToast('Song deleted');
 }
 
@@ -177,7 +359,12 @@ function renderPlaylists() {
         <div class="playlist-item">
             <button class="playlist-btn ${selectedPlaylistId === null ? 'active' : ''}" 
                     onclick="selectPlaylist(null)">
-                📋 All Songs
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/>
+                    </svg>
+                    <span>All Songs</span>
+                </div>
                 <span>${songs.length}</span>
             </button>
         </div>
@@ -185,10 +372,19 @@ function renderPlaylists() {
             <div class="playlist-item">
                 <button class="playlist-btn ${selectedPlaylistId === playlist.id ? 'active' : ''}" 
                         onclick="selectPlaylist('${playlist.id}')">
-                    📋 ${playlist.name}
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                            <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/>
+                        </svg>
+                        <span>${playlist.name}</span>
+                    </div>
                     <span>${playlist.songIds?.length || 0}</span>
                 </button>
-                <button class="playlist-delete" onclick="deletePlaylist('${playlist.id}')">🗑️</button>
+                <button class="playlist-delete" onclick="deletePlaylist('${playlist.id}')">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                    </svg>
+                </button>
             </div>
         `).join('')}
     `;
@@ -295,7 +491,9 @@ function renderQueue() {
     if (queue.length === 0) {
         list.innerHTML = `
             <div style="text-align: center; padding: 3rem 1rem; color: var(--text-secondary);">
-                <div style="font-size: 3rem; margin-bottom: 0.5rem; opacity: 0.5;">📋</div>
+                <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor" style="opacity: 0.5; margin-bottom: 0.5rem;">
+                    <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/>
+                </svg>
                 <p>No songs in queue</p>
             </div>
         `;
@@ -310,7 +508,11 @@ function renderQueue() {
                     <div class="queue-item-title">${song.title}</div>
                     ${index === currentIndex ? '<div class="queue-item-status">Now Playing</div>' : ''}
                 </div>
-                <button class="queue-item-delete" onclick="event.stopPropagation(); removeFromQueue(${index})">🗑️</button>
+                <button class="queue-item-delete" onclick="event.stopPropagation(); removeFromQueue(${index})">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                    </svg>
+                </button>
             </div>
         `).join('');
     }
@@ -330,32 +532,74 @@ function loadVideo() {
     if (currentIndex < 0 || currentIndex >= queue.length) return;
     
     const song = queue[currentIndex];
-    const videoId = extractVideoId(song.url);
+    trackPlay(song.id);
+    requestWakeLock();
     
     document.getElementById('player-thumbnail').src = song.thumbnail;
     document.getElementById('player-title').textContent = song.title;
     document.getElementById('music-player').classList.remove('hidden');
     
-    if (!player) {
-        player = new YT.Player('youtube-player', {
-            height: '0',
-            width: '0',
-            videoId: videoId,
-            playerVars: {
-                autoplay: 1
-            },
-            events: {
-                onReady: onPlayerReady,
-                onStateChange: onPlayerStateChange
-            }
-        });
+    // If it's a Spotify track with preview
+    if (song.isSpotify && song.previewUrl) {
+        playSpotifyPreview(song.previewUrl);
     } else {
-        player.loadVideoById(videoId);
-        isPlaying = true;
-        updatePlayButton();
+        // Try YouTube
+        const videoId = extractVideoId(song.url);
+        if (!videoId && !song.isSpotify) {
+            showToast('Cannot play this song');
+            return;
+        }
+        
+        if (!player && videoId) {
+            player = new YT.Player('youtube-player', {
+                height: '0',
+                width: '0',
+                videoId: videoId,
+                playerVars: {
+                    autoplay: 1
+                },
+                events: {
+                    onReady: onPlayerReady,
+                    onStateChange: onPlayerStateChange
+                }
+            });
+        } else if (player && videoId) {
+            player.loadVideoById(videoId);
+            isPlaying = true;
+            updatePlayButton();
+        }
     }
     
     renderQueue();
+}
+
+let audioElement = null;
+
+function playSpotifyPreview(previewUrl) {
+    // Stop YouTube if playing
+    if (player) {
+        try { player.pauseVideo(); } catch (e) {}
+    }
+    
+    // Create or reuse audio element
+    if (!audioElement) {
+        audioElement = new Audio();
+        audioElement.onended = () => playNext();
+        audioElement.onplay = () => {
+            isPlaying = true;
+            updatePlayButton();
+        };
+        audioElement.onpause = () => {
+            isPlaying = false;
+            updatePlayButton();
+        };
+    }
+    
+    audioElement.src = previewUrl;
+    audioElement.volume = volume / 100;
+    audioElement.play();
+    isPlaying = true;
+    updatePlayButton();
 }
 
 function onPlayerReady(event) {
@@ -377,18 +621,26 @@ function onPlayerStateChange(event) {
 }
 
 function togglePlayPause() {
-    if (!player) return;
-    
-    if (isPlaying) {
-        player.pauseVideo();
-    } else {
-        player.playVideo();
+    if (audioElement && audioElement.src) {
+        if (isPlaying) {
+            audioElement.pause();
+        } else {
+            audioElement.play();
+        }
+    } else if (player) {
+        if (isPlaying) {
+            player.pauseVideo();
+        } else {
+            player.playVideo();
+        }
     }
 }
 
 function updatePlayButton() {
     const btn = document.getElementById('play-pause-btn');
-    btn.textContent = isPlaying ? '⏸️' : '▶️';
+    btn.innerHTML = isPlaying 
+        ? '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>'
+        : '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
 }
 
 function playNext() {
@@ -407,25 +659,37 @@ function playPrevious() {
 
 function changeVolume(value) {
     volume = parseInt(value);
+    
+    if (audioElement) {
+        audioElement.volume = volume / 100;
+    }
+    
     if (player) {
         player.setVolume(volume);
     }
+    
     if (volume > 0 && isMuted) {
         isMuted = false;
-        player.unMute();
+        if (player) player.unMute();
+        if (audioElement) audioElement.muted = false;
     }
     updateVolumeIcon();
 }
 
 function toggleMute() {
-    if (!player) return;
-    
     if (isMuted) {
-        player.unMute();
-        player.setVolume(volume);
+        if (player) {
+            player.unMute();
+            player.setVolume(volume);
+        }
+        if (audioElement) {
+            audioElement.muted = false;
+            audioElement.volume = volume / 100;
+        }
         isMuted = false;
     } else {
-        player.mute();
+        if (player) player.mute();
+        if (audioElement) audioElement.muted = true;
         isMuted = true;
     }
     updateVolumeIcon();
@@ -433,7 +697,11 @@ function toggleMute() {
 
 function updateVolumeIcon() {
     const icon = document.getElementById('volume-icon');
-    icon.textContent = (isMuted || volume === 0) ? '🔇' : '🔊';
+    if (isMuted || volume === 0) {
+        icon.innerHTML = '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>';
+    } else {
+        icon.innerHTML = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
+    }
 }
 
 // Toast notifications
@@ -481,19 +749,30 @@ document.head.appendChild(style);
 loadData();
 
 // Close dialogs on background click
-document.getElementById('add-song-dialog').addEventListener('click', (e) => {
-    if (e.target.id === 'add-song-dialog') closeAddSongDialog();
+document.getElementById('search-dialog').addEventListener('click', (e) => {
+    if (e.target.id === 'search-dialog') closeSearchDialog();
 });
 
 document.getElementById('playlist-dialog').addEventListener('click', (e) => {
     if (e.target.id === 'playlist-dialog') closePlaylistDialog();
 });
 
-// Enter key to add song
-document.getElementById('youtube-url').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') addSong();
+document.getElementById('add-to-playlist-dialog').addEventListener('click', (e) => {
+    if (e.target.id === 'add-to-playlist-dialog') closeAddToPlaylistDialog();
 });
+
+// Enter key handlers
+document.getElementById('search-input').addEventListener('input', searchSongs);
 
 document.getElementById('new-playlist-name').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') createPlaylist();
+});
+
+// Release wake lock when page is hidden
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        releaseWakeLock();
+    } else if (isPlaying) {
+        requestWakeLock();
+    }
 });
