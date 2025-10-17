@@ -221,8 +221,8 @@ function renderSongs() {
         emptyState.classList.add('show');
     } else {
         emptyState.classList.remove('show');
-        grid.innerHTML = filteredSongs.map(song => `
-            <div class="song-card">
+        grid.innerHTML = filteredSongs.map((song, index) => `
+            <div class="song-card" style="animation-delay: ${index * 0.05}s">
                 <div class="song-card-image">
                     <img src="${song.thumbnail}" alt="${song.title}">
                     <div class="song-card-overlay">
@@ -290,12 +290,22 @@ function toggleSongInPlaylist(playlistId, songId) {
     if (!playlist.songIds) playlist.songIds = [];
     
     const index = playlist.songIds.indexOf(songId);
+    const button = event.target.closest('.playlist-toggle-btn');
+    
     if (index > -1) {
         playlist.songIds.splice(index, 1);
-        showToast('Removed from playlist');
+        showToast('✓ Removed from playlist');
+        if (button) {
+            button.style.animation = 'shake 0.3s ease-out';
+            setTimeout(() => button.style.animation = '', 300);
+        }
     } else {
         playlist.songIds.push(songId);
-        showToast('Added to playlist');
+        showToast('✓ Added to playlist');
+        if (button) {
+            button.style.animation = 'pop-in 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+            setTimeout(() => button.style.animation = '', 400);
+        }
     }
     
     saveData();
@@ -767,6 +777,25 @@ document.getElementById('search-input').addEventListener('input', searchSongs);
 document.getElementById('new-playlist-name').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') createPlaylist();
 });
+
+// Load YouTube API
+function loadYouTubeAPI() {
+    if (!window.YT) {
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    }
+}
+
+// Initialize
+loadYouTubeAPI();
+loadData();
+renderSongs();
+renderPlaylists();
+updatePlayButton();
+updateVolumeIcon();
+updateQueueCount();
 
 // Release wake lock when page is hidden
 document.addEventListener('visibilitychange', () => {

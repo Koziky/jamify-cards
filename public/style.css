@@ -73,10 +73,30 @@ body {
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn:hover::before {
+    width: 300px;
+    height: 300px;
 }
 
 .btn-primary {
@@ -85,8 +105,12 @@ body {
 }
 
 .btn-primary:hover {
-    box-shadow: 0 0 30px var(--glow);
-    transform: translateY(-2px);
+    box-shadow: 0 0 30px var(--glow), 0 8px 16px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px) scale(1.02);
+}
+
+.btn-primary:active {
+    transform: translateY(0) scale(0.98);
 }
 
 .btn-outline {
@@ -97,6 +121,12 @@ body {
 
 .btn-outline:hover {
     border-color: var(--primary);
+    background: rgba(157, 93, 219, 0.1);
+    transform: translateY(-1px);
+}
+
+.btn-outline:active {
+    transform: translateY(0);
 }
 
 /* Songs Grid */
@@ -111,14 +141,26 @@ body {
     border: 1px solid var(--border);
     border-radius: 1rem;
     overflow: hidden;
-    transition: all 0.3s;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
+    animation: fade-in 0.5s ease-out;
 }
 
 .song-card:hover {
-    transform: scale(1.05);
+    transform: translateY(-8px) scale(1.02);
     border-color: var(--primary);
-    box-shadow: 0 0 30px var(--glow);
+    box-shadow: 0 0 40px var(--glow), 0 12px 24px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .song-card-image {
@@ -131,11 +173,11 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.3s;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .song-card:hover img {
-    transform: scale(1.1);
+    transform: scale(1.15) rotate(2deg);
 }
 
 .song-card-overlay {
@@ -168,47 +210,66 @@ body {
 }
 
 .action-btn {
-    background: rgba(0, 0, 0, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(157, 93, 219, 0.3);
     border-radius: 50%;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     color: var(--text-primary);
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .action-btn:hover {
-    background: var(--accent);
+    background: linear-gradient(135deg, var(--primary), var(--accent));
     border-color: var(--accent);
-    transform: scale(1.1);
+    transform: scale(1.2) rotate(5deg);
+    box-shadow: 0 4px 12px var(--glow);
 }
 
 .action-btn.delete:hover {
-    background: #dc2626;
+    background: linear-gradient(135deg, #dc2626, #ef4444);
     border-color: #dc2626;
+    transform: scale(1.2) rotate(-5deg);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.5);
 }
 
 .play-btn {
-    width: 4rem;
-    height: 4rem;
+    width: 4.5rem;
+    height: 4.5rem;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--primary), var(--accent));
-    border: none;
+    border: 2px solid rgba(255, 255, 255, 0.2);
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: pulse-glow 2s infinite;
 }
 
 .play-btn:hover {
-    box-shadow: 0 0 30px rgba(233, 77, 159, 0.5);
-    transform: scale(1.1);
+    box-shadow: 0 0 40px rgba(233, 77, 159, 0.8), 0 0 60px var(--glow);
+    transform: scale(1.15) rotate(5deg);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.play-btn:active {
+    transform: scale(1.05);
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 20px var(--glow);
+    }
+    50% {
+        box-shadow: 0 0 30px var(--glow), 0 0 40px rgba(233, 77, 159, 0.5);
+    }
 }
 
 .song-card-info {
@@ -506,15 +567,25 @@ body {
     align-items: center;
     justify-content: center;
     z-index: 100;
+    animation: fade-in-overlay 0.3s ease-out;
 }
 
 .dialog-overlay.show {
     display: flex;
 }
 
+@keyframes fade-in-overlay {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
 .dialog {
     background: var(--bg-secondary);
-    border: 1px solid var(--border);
+    border: 1px solid var(--primary);
     border-radius: 1rem;
     width: 90%;
     max-width: 500px;
@@ -522,6 +593,19 @@ body {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 40px var(--glow);
+    animation: scale-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes scale-in {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 .dialog-header {
@@ -630,24 +714,78 @@ body {
     border-radius: 0.5rem;
     color: var(--text-primary);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 1rem;
     text-align: left;
+    position: relative;
+    overflow: hidden;
+}
+
+.playlist-toggle-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(157, 93, 219, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.playlist-toggle-btn:hover::before {
+    left: 100%;
 }
 
 .playlist-toggle-btn:hover {
     border-color: var(--primary);
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px var(--glow);
 }
 
 .playlist-toggle-btn.active {
     background: linear-gradient(135deg, var(--primary), var(--accent));
     color: white;
     border-color: var(--accent);
+    animation: slide-in-active 0.3s ease-out;
+}
+
+@keyframes slide-in-active {
+    from {
+        transform: scale(0.95);
+        opacity: 0.8;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .playlist-toggle-btn span {
     font-weight: bold;
     font-size: 1.2rem;
+    transition: transform 0.3s;
+}
+
+.playlist-toggle-btn.active span {
+    animation: pop-in 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes pop-in {
+    0% {
+        transform: scale(0);
+    }
+    50% {
+        transform: scale(1.3);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
 }
 
 .playlist-input {
