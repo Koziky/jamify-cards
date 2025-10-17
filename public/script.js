@@ -80,11 +80,6 @@ function extractVideoId(url) {
     return null;
 }
 
-// YouTube API Ready
-function onYouTubeIframeAPIReady() {
-    console.log('YouTube API Ready');
-}
-
 // Search Dialog
 function openSearchDialog() {
     document.getElementById('search-dialog').classList.add('show');
@@ -216,6 +211,13 @@ function renderSongs() {
         })
         : songs;
     
+    // Update greeting based on time
+    const hour = new Date().getHours();
+    let greeting = 'Good evening';
+    if (hour < 12) greeting = 'Good morning';
+    else if (hour < 18) greeting = 'Good afternoon';
+    document.getElementById('greeting').textContent = greeting;
+    
     if (filteredSongs.length === 0) {
         grid.innerHTML = '';
         emptyState.classList.add('show');
@@ -225,26 +227,19 @@ function renderSongs() {
             <div class="song-card" style="animation-delay: ${index * 0.05}s">
                 <div class="song-card-image">
                     <img src="${song.thumbnail}" alt="${song.title}">
-                    <div class="song-card-overlay">
-                        <button class="play-btn" onclick="addToQueue('${song.id}')">
-                            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-                                <path d="M8 5v14l11-7z"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="song-card-actions">
-                        <button class="action-btn" onclick="event.stopPropagation(); addToQueue('${song.id}')" title="Add to queue">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                    <button class="play-btn-card" onclick="event.stopPropagation(); addToQueue('${song.id}')">
+                        <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                    </button>
+                    <div class="card-actions">
+                        <button class="card-action-btn" onclick="event.stopPropagation(); openAddToPlaylistDialog('${song.id}')" title="Add to playlist">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                                 <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
                             </svg>
                         </button>
-                        <button class="action-btn" onclick="event.stopPropagation(); openAddToPlaylistDialog('${song.id}')" title="Add to playlist">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/>
-                            </svg>
-                        </button>
-                        <button class="action-btn delete" onclick="event.stopPropagation(); deleteSong('${song.id}')" title="Delete">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <button class="card-action-btn" onclick="event.stopPropagation(); deleteSong('${song.id}')" title="Delete">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                                 <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                             </svg>
                         </button>
@@ -364,40 +359,36 @@ function createPlaylist() {
 
 function renderPlaylists() {
     const list = document.getElementById('playlists-list');
+    const sidebarList = document.getElementById('sidebar-playlists-list');
     
-    list.innerHTML = `
-        <div class="playlist-item">
-            <button class="playlist-btn ${selectedPlaylistId === null ? 'active' : ''}" 
-                    onclick="selectPlaylist(null)">
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                        <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/>
-                    </svg>
-                    <span>All Songs</span>
-                </div>
-                <span>${songs.length}</span>
-            </button>
-        </div>
-        ${playlists.map(playlist => `
+    // Render playlists in dialog
+    if (list) {
+        list.innerHTML = playlists.map(playlist => `
             <div class="playlist-item">
                 <button class="playlist-btn ${selectedPlaylistId === playlist.id ? 'active' : ''}" 
                         onclick="selectPlaylist('${playlist.id}')">
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                            <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/>
-                        </svg>
-                        <span>${playlist.name}</span>
-                    </div>
-                    <span>${playlist.songIds?.length || 0}</span>
+                    ${playlist.name} (${playlist.songIds?.length || 0})
                 </button>
-                <button class="playlist-delete" onclick="deletePlaylist('${playlist.id}')">
+                <button class="playlist-delete" onclick="event.stopPropagation(); deletePlaylist('${playlist.id}')">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                         <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                     </svg>
                 </button>
             </div>
-        `).join('')}
-    `;
+        `).join('');
+    }
+    
+    // Render playlists in sidebar
+    if (sidebarList) {
+        sidebarList.innerHTML = playlists.map((playlist, index) => `
+            <button class="playlist-sidebar-item ${selectedPlaylistId === playlist.id ? 'active' : ''}" 
+                    onclick="selectPlaylist('${playlist.id}')" 
+                    style="animation-delay: ${index * 0.03}s"
+                    title="${playlist.name}">
+                ${playlist.name}
+            </button>
+        `).join('');
+    }
 }
 
 function selectPlaylist(id) {
@@ -777,6 +768,11 @@ document.getElementById('search-input').addEventListener('input', searchSongs);
 document.getElementById('new-playlist-name').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') createPlaylist();
 });
+
+// YouTube API Ready callback
+window.onYouTubeIframeAPIReady = function() {
+    console.log('YouTube API Ready');
+};
 
 // Load YouTube API
 function loadYouTubeAPI() {
